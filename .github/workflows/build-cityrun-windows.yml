@@ -29,6 +29,10 @@ jobs:
           $templateDir = "$env:APPDATA\Godot\export_templates\4.3.stable"
           New-Item -ItemType Directory -Force -Path $templateDir | Out-Null
           Copy-Item "templates\templates\*" $templateDir -Recurse -Force
+          if (!(Test-Path (Join-Path $templateDir "windows_release_x86_64.exe"))) {
+            Get-ChildItem $templateDir -Recurse | Select-Object FullName
+            throw "Godot Windows release export template was not installed"
+          }
       - name: Import and validate project
         shell: pwsh
         run: |
@@ -37,23 +41,25 @@ jobs:
       - name: Export Windows game
         shell: pwsh
         run: |
-          & "godot\Godot_v4.3-stable_win64.exe" --headless --path "gta5-one-mission" --export-release "Windows Desktop" "CityRun.exe"
+          $buildDir = Join-Path $PWD "gta5-one-mission\build"
+          New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
+          $output = Join-Path $buildDir "CityRun.exe"
+          & "godot\Godot_v4.3-stable_win64.exe" --headless --path "gta5-one-mission" --export-release "Windows Desktop" "$output"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $exe = Get-ChildItem -Path $PWD -Filter "CityRun.exe" -Recurse | Where-Object { $_.FullName -notmatch "\\package\\" } | Select-Object -First 1
-          if (!$exe) {
-            Get-ChildItem -Path $PWD -Recurse -File | Select-Object -ExpandProperty FullName
-            throw "Godot did not create CityRun.exe"
+          if (!(Test-Path $output)) {
+            Get-ChildItem -Path "gta5-one-mission" -Recurse -File | Select-Object -ExpandProperty FullName
+            throw "Godot export completed without creating $output"
           }
-          Write-Host "Exported executable: $($exe.FullName)"
+          Write-Host "Exported executable: $output"
       - name: Package game
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path package | Out-Null
-          $exe = Get-ChildItem -Path $PWD -Filter "CityRun.exe" -Recurse | Where-Object { $_.FullName -notmatch "\\package\\" } | Select-Object -First 1
-          if (!$exe) { throw "CityRun.exe is missing; export step did not produce it" }
-          Copy-Item $exe.FullName package\CityRun.exe
-          $pck = Get-ChildItem -Path $PWD -Filter "CityRun.pck" -Recurse | Where-Object { $_.FullName -notmatch "\\package\\" } | Select-Object -First 1
-          if ($pck) { Copy-Item $pck.FullName package\CityRun.pck }
+          $exe = "gta5-one-mission\build\CityRun.exe"
+          if (!(Test-Path $exe)) { throw "CityRun.exe is missing: $exe" }
+          Copy-Item $exe package\CityRun.exe
+          $pck = "gta5-one-mission\build\CityRun.pck"
+          if (Test-Path $pck) { Copy-Item $pck package\CityRun.pck }
           Compress-Archive -Path "package\*" -DestinationPath "CityRun-Windows.zip" -Force
           Get-ChildItem package | Format-Table Name,Length
       - uses: actions/upload-artifact@v4
