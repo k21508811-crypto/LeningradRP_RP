@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <queries><package android:name="ru.cityrun.game" /></queries>
     <application
         android:allowBackup="false"
         android:label="City Run Launcher"
