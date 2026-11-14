@@ -1,4 +1,4 @@
-name: Build City Run Android Test Launcher
+name: Build City Run Android Apps
 on:
   workflow_dispatch:
   push:
@@ -24,13 +24,22 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build test APK
-        run: gradle assembleDebug
-      - name: Verify APK
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload APK
+      - name: Build launcher and mobile game
+        run: gradle :app:assembleDebug :game:assembleDebug
+      - name: Verify both APKs
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s game/build/outputs/apk/debug/game-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk game/build/outputs/apk/debug/game-debug.apk
+      - name: Upload launcher APK
         uses: actions/upload-artifact@v4
         with:
-          name: CityRun-Android-Test-Launcher
+          name: CityRun-Launcher-Android
           path: cityrun-android-launcher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Upload mobile game APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CityRun-Mobile-Test
+          path: cityrun-android-launcher/game/build/outputs/apk/debug/game-debug.apk
           if-no-files-found: error
