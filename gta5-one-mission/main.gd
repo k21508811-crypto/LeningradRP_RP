@@ -77,7 +77,7 @@ func _build_city() -> void:
 			var w := 8.0 + float((i*7)%5)
 			var h := 9.0 + float((i*11)%22)
 			_box("Building", Vector3(side*(17+w*0.5),h*0.5-0.1,z), Vector3(w,h,13), Color(0.24+float(i%3)*0.04,0.27,0.31))
-			_add_building_windows(side, 17.0 + w * 0.5, z, w, h, i)
+			_add_building_windows(side, side * (17.0 + w * 0.5), z, w, h, i)
 	for z in range(-10,-190,-10):
 		_box("Lane marking", Vector3(0,0.04,z), Vector3(0.18,0.025,4), Color(0.85,0.78,0.48), false)
 	_box("Garage plaza", Vector3(0,0.02,-166), Vector3(34,0.2,20), Color(0.23,0.27,0.25))
@@ -129,6 +129,13 @@ func _add_streetlight(x: float, z: float) -> void:
 	head.material_override = mat
 	head.position = Vector3(x, 6.1, z)
 	add_child(head)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.68, 0.36)
+	light.light_energy = 0.45
+	light.omni_range = 9.0
+	light.shadow_enabled = false
+	light.position = Vector3(x, 5.8, z)
+	add_child(light)
 
 func _add_tree(x: float, z: float) -> void:
 	_box("Tree trunk", Vector3(x, 1.0, z), Vector3(0.45, 2.0, 0.45), Color(0.22, 0.13, 0.08))
@@ -189,6 +196,46 @@ func _build_car() -> void:
 	chassis.material_override = paint
 	chassis.position.y = 0.7
 	car.add_child(chassis)
+	var wheel_mat := StandardMaterial3D.new()
+	wheel_mat.albedo_color = Color(0.025, 0.03, 0.035)
+	wheel_mat.roughness = 0.92
+	for wheel_x in [-0.92, 0.92]:
+		for wheel_z in [-1.25, 1.25]:
+			var wheel := MeshInstance3D.new()
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.38
+			wheel_mesh.bottom_radius = 0.38
+			wheel_mesh.height = 0.24
+			wheel.mesh = wheel_mesh
+			wheel.material_override = wheel_mat
+			wheel.rotation_degrees.z = 90
+			wheel.position = Vector3(wheel_x, 0.4, wheel_z)
+			car.add_child(wheel)
+	var lamp_mat := StandardMaterial3D.new()
+	lamp_mat.albedo_color = Color(1.0, 0.9, 0.62)
+	lamp_mat.emission_enabled = true
+	lamp_mat.emission = Color(1.0, 0.72, 0.35)
+	lamp_mat.emission_energy_multiplier = 1.2
+	for lamp_x in [-0.62, 0.62]:
+		var headlamp := MeshInstance3D.new()
+		var lamp_mesh := BoxMesh.new()
+		lamp_mesh.size = Vector3(0.42, 0.2, 0.08)
+		headlamp.mesh = lamp_mesh
+		headlamp.material_override = lamp_mat
+		headlamp.position = Vector3(lamp_x, 0.82, -2.02)
+		car.add_child(headlamp)
+	var tail_mat := StandardMaterial3D.new()
+	tail_mat.albedo_color = Color(0.85, 0.025, 0.015)
+	tail_mat.emission_enabled = true
+	tail_mat.emission = Color(0.65, 0.01, 0.005)
+	for lamp_x in [-0.62, 0.62]:
+		var taillamp := MeshInstance3D.new()
+		var tail_mesh := BoxMesh.new()
+		tail_mesh.size = Vector3(0.42, 0.2, 0.08)
+		taillamp.mesh = tail_mesh
+		taillamp.material_override = tail_mat
+		taillamp.position = Vector3(lamp_x, 0.82, 2.02)
+		car.add_child(taillamp)
 	var roof := MeshInstance3D.new()
 	var roof_mesh := BoxMesh.new()
 	roof_mesh.size = Vector3(1.55,0.65,1.9)
