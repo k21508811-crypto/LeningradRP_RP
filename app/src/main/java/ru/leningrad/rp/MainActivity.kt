@@ -108,7 +108,7 @@ class MainActivity : Activity() {
             setTextColor(Color.rgb(110, 230, 150))
             textSize = 12f
             typeface = Typeface.MONOSPACE
-            text = "LENINGRAD RP CONSOLE\\n> Приложение запущено.\\n> Ожидание команды..."
+            text = "LENINGRAD RP CONSOLE\n> Приложение запущено.\n> Ожидание команды..."
         }
         consoleScroll.addView(console)
         content.addView(consoleScroll, LinearLayout.LayoutParams(-1, dp(190)))
@@ -145,15 +145,15 @@ class MainActivity : Activity() {
             val scriptDir = File(cacheDir, "python").apply { mkdirs() }
             val script = File(scriptDir, "leningrad_rp_check.py")
             script.writeText(
-                "import platform\\n" +
-                "import sys\\n" +
-                "from datetime import datetime\\n\\n" +
-                "print('=== LENINGRAD RP PYTHON AGENT ===')\\n" +
-                "print('Статус: Python запущен')\\n" +
-                "print('Время:', datetime.now().isoformat(timespec='seconds'))\\n" +
-                "print('Устройство:', platform.system(), platform.release())\\n" +
-                "print('Версия Python:', sys.version.split()[0])\\n" +
-                "print('Проверка завершена успешно')\\n"
+                "import platform\n" +
+                "import sys\n" +
+                "from datetime import datetime\n\n" +
+                "print('=== LENINGRAD RP PYTHON AGENT ===')\n" +
+                "print('Статус: Python запущен')\n" +
+                "print('Время:', datetime.now().isoformat(timespec='seconds'))\n" +
+                "print('Устройство:', platform.system(), platform.release())\n" +
+                "print('Версия Python:', sys.version.split()[0])\n" +
+                "print('Проверка завершена успешно')\n"
             )
             val uri: Uri = FileProvider.getUriForFile(
                 this,
@@ -187,16 +187,16 @@ class MainActivity : Activity() {
         worker.execute {
             val network = networkInfo()
             val publicIp = fetchPublicIp()
-            val summary = "Тип сети: ${network.first}\\nЛокальный IP: ${network.second}\\nПубличный IP: ${publicIp ?: "не определён"}"
+            val summary = "Тип сети: ${network.first}\nЛокальный IP: ${network.second}\nПубличный IP: ${publicIp ?: "не определён"}"
             var message = summary
             if (bridge.isEmpty()) {
-                message += "\\n\\nСеть обнаружена. Адрес HTTPS-моста не задан, поэтому Discord-бот не подключён."
+                message += "\n\nСеть обнаружена. Адрес HTTPS-моста не задан, поэтому Discord-бот не подключён."
             } else if (!bridge.startsWith("https://")) {
-                message += "\\n\\nДля безопасности укажите HTTPS-адрес моста."
+                message += "\n\nДля безопасности укажите HTTPS-адрес моста."
             } else {
                 val response = postActivation(bridge, network.first, network.second, publicIp)
-                message += if (response == null) "\\n\\nНе удалось связаться с мостом бота."
-                else "\\n\\nОтвет моста: " + response.optString("message", response.toString())
+                message += if (response == null) "\n\nНе удалось связаться с мостом бота."
+                else "\n\nОтвет моста: " + response.optString("message", response.toString())
             }
             runOnUiThread {
                 status.text = message
@@ -212,7 +212,7 @@ class MainActivity : Activity() {
     private fun logLine(message: String) {
         if (!::console.isInitialized) return
         val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        console.append("\\n[$time] > $message")
+        console.append("\n[$time] > $message")
         if (::consoleScroll.isInitialized) consoleScroll.post { consoleScroll.fullScroll(View.FOCUS_DOWN) }
     }
 
