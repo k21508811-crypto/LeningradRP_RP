@@ -1,0 +1,78 @@
+name: Build City Run PC Demo + Launcher
+
+on:
+  push:
+    branches: [cityrun-pc-demo-launcher]
+    paths:
+      - "gta5-one-mission/**"
+      - "cityrun-launcher/**"
+      - ".github/workflows/build-cityrun-pc-demo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download Godot 4.3 and export templates
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_win64.exe.zip" -OutFile godot.zip
+          Expand-Archive godot.zip -DestinationPath godot
+          Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz" -OutFile templates.tpz
+          Expand-Archive templates.tpz -DestinationPath templates
+          $templateDir = "$env:APPDATA\Godot\export_templates\4.3.stable"
+          New-Item -ItemType Directory -Force $templateDir | Out-Null
+          Copy-Item "templates\templates\*" $templateDir -Recurse -Force
+
+      - name: Import and validate both projects
+        shell: pwsh
+        run: |
+          $godot = "$PWD\godot\Godot_v4.3-stable_win64.exe"
+          & $godot --headless --editor --path "$PWD\gta5-one-mission" --quit
+          if ($LASTEXITCODE -ne 0) { throw "Game project import failed" }
+          & $godot --headless --editor --path "$PWD\cityrun-launcher" --quit
+          if ($LASTEXITCODE -ne 0) { throw "Launcher project import failed" }
+
+      - name: Export game and launcher
+        shell: pwsh
+        run: |
+          $godot = "$PWD\godot\Godot_v4.3-stable_win64.exe"
+          New-Item -ItemType Directory -Force "gta5-one-mission\build" | Out-Null
+          New-Item -ItemType Directory -Force "cityrun-launcher\build" | Out-Null
+          & $godot --headless --editor --path "$PWD\gta5-one-mission" --export-release "Windows Desktop" "$PWD\gta5-one-mission\build\CityRun.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Game export failed" }
+          & $godot --headless --editor --path "$PWD\cityrun-launcher" --export-release "Windows Desktop" "$PWD\cityrun-launcher\build\CityRunLauncher.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Launcher export failed" }
+          if (!(Test-Path "gta5-one-mission\build\CityRun.exe")) { throw "CityRun.exe missing" }
+          if (!(Test-Path "cityrun-launcher\build\CityRunLauncher.exe")) { throw "CityRunLauncher.exe missing" }
+
+      - name: Assemble portable demo folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "package\CityRunDemo\Launcher","package\CityRunDemo\Game" | Out-Null
+          Copy-Item "cityrun-launcher\build\CityRunLauncher.exe" "package\CityRunDemo\Launcher\"
+          Copy-Item "gta5-one-mission\build\CityRun.exe" "package\CityRunDemo\Game\"
+          if (Test-Path "gta5-one-mission\build\CityRun.pck") {
+            Copy-Item "gta5-one-mission\build\CityRun.pck" "package\CityRunDemo\Game\"
+          }
+          @'
+          CITY RUN — PC DEMO
+          1. Extract the complete CityRunDemo folder.
+          2. Run Launcher\CityRunLauncher.exe.
+          3. Keep the Launcher and Game folders side by side.
+          Controls: WASD, mouse, E, Esc.
+          This is an early original prototype, not GTA V and not a finished AAA game.
+          '@ | Set-Content "package\CityRunDemo\READ-ME-FIRST.txt"
+          Compress-Archive -Path "package\CityRunDemo" -DestinationPath "CityRun-PC-Demo.zip" -Force
+          Get-ChildItem "package\CityRunDemo" -Recurse | Select-Object FullName,Length
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: CityRun-PC-Demo-with-Launcher
+          path: CityRun-PC-Demo.zip
+          if-no-files-found: error
