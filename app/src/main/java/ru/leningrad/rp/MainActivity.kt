@@ -1,127 +1,213 @@
-package ru.leningrad.aistudio
+package ru.leningrad.virusprank
 
 import android.app.Activity
-import android.os.Bundle
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
-import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.view.Gravity
-import android.widget.*
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
+import android.view.WindowManager
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 
 class MainActivity : Activity() {
-    private lateinit var prompt: EditText
-    private lateinit var apiKey: EditText
-    private lateinit var model: Spinner
-    private lateinit var preview: ImageView
+    private val handler = Handler(Looper.getMainLooper())
+    private var seconds = 60
+    private var running = false
+    private var overlayView: Button? = null
+    private var windowManager: WindowManager? = null
+    private lateinit var root: LinearLayout
     private lateinit var status: TextView
-    private lateinit var generate: Button
-    private var image: Bitmap? = null
-    private val models = listOf("black-forest-labs/flux.1-schnell", "google/gemini-2.5-flash-image", "openai/gpt-image-1-mini")
+    private lateinit var timer: TextView
+    private lateinit var startButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(13,15,23)
-        window.navigationBarColor = Color.rgb(13,15,23)
-        val root = LinearLayout(this).apply { orientation=1; setPadding(dp(20),dp(18),dp(20),dp(18)); setBackgroundColor(Color.rgb(13,15,23)) }
-        val scroll = ScrollView(this)
-        val body = LinearLayout(this).apply { orientation=1 }
-        body.addView(label("✦ LENINGRAD AI STUDIO",22,true), match())
-        body.addView(label("Превращай идеи в изображения",14,false), match())
-        body.addView(label("ОПИШИ ИЗОБРАЖЕНИЕ",12,true), match())
-        prompt = EditText(this).apply {
-            hint="Например: уютный домик в заснеженном лесу, кинематографичный свет..."
-            setTextColor(Color.WHITE); setHintTextColor(0xFF9DA8BE.toInt()); textSize=15f
-            minLines=4; maxLines=6; gravity=Gravity.TOP; setPadding(dp(13),dp(12),dp(13),dp(12))
-            setBackgroundColor(0xFF191D2A.toInt())
-        }
-        body.addView(prompt, LinearLayout.LayoutParams(-1,dp(125)).apply { topMargin=dp(8); bottomMargin=dp(16) })
-        body.addView(label("МОДЕЛЬ",12,true),match())
-        model = Spinner(this).apply { adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,models) }
-        body.addView(model,LinearLayout.LayoutParams(-1,dp(50)).apply { bottomMargin=dp(16) })
-        body.addView(label("API-КЛЮЧ POLLINATIONS",12,true),match())
-        apiKey = EditText(this).apply {
-            hint="Вставь свой ключ sk_..."; setTextColor(Color.WHITE); setHintTextColor(0xFF9DA8BE.toInt())
-            inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setSingleLine(true); setPadding(dp(13),dp(10),dp(13),dp(10)); setBackgroundColor(0xFF191D2A.toInt())
-        }
-        body.addView(apiKey,LinearLayout.LayoutParams(-1,dp(50)).apply { topMargin=dp(8) })
-        body.addView(label("Ключ не вшит в APK и не сохраняется приложением.",11,false),match())
-        generate=Button(this).apply {
-            text="✦  СГЕНЕРИРОВАТЬ"; isAllCaps=false; setTextColor(Color.WHITE)
-            setBackgroundColor(0xFF7549D8.toInt()); setOnClickListener { generateImage() }
-        }
-        body.addView(generate,LinearLayout.LayoutParams(-1,dp(54)).apply { topMargin=dp(14) })
-        status=label("Готов к созданию изображения",13,false).apply { gravity=Gravity.CENTER }
-        body.addView(status,match())
-        preview=ImageView(this).apply { setBackgroundColor(0xFF191D2A.toInt()); scaleType=ImageView.ScaleType.FIT_CENTER; contentDescription="Созданное изображение" }
-        body.addView(preview,LinearLayout.LayoutParams(-1,dp(320)).apply { topMargin=dp(8); bottomMargin=dp(10) })
-        body.addView(Button(this).apply {
-            text="СОХРАНИТЬ ИЗОБРАЖЕНИЕ"; isAllCaps=false; setTextColor(Color.WHITE); setBackgroundColor(0xFF303A50.toInt())
-            setOnClickListener { saveImage() }
-        },LinearLayout.LayoutParams(-1,dp(50)))
-        scroll.addView(body); root.addView(scroll,LinearLayout.LayoutParams(-1,0,1f)); setContentView(root)
+        window.statusBarColor = Color.rgb(18, 0, 0)
+        window.navigationBarColor = Color.rgb(18, 0, 0)
+        showAgreement()
     }
 
-    private fun generateImage() {
-        val description=prompt.text.toString().trim()
-        val key=apiKey.text.toString().trim()
-        if(description.isEmpty()){prompt.error="Напиши, что нарисовать";return}
-        if(key.isEmpty()){apiKey.error="Введи API-ключ";return}
-        generate.isEnabled=false; status.text="Генерируем изображение..."
-        val selected=models[model.selectedItemPosition]
-        Thread {
-            var conn:HttpURLConnection?=null
-            try {
-                val encoded=URLEncoder.encode(description,"UTF-8").replace("+","%20")
-                val modelArg=URLEncoder.encode(selected,"UTF-8")
-                conn=(URL("https://gen.pollinations.ai/image/$encoded?model=$modelArg&width=1024&height=1024").openConnection() as HttpURLConnection).apply {
-                    connectTimeout=30000; readTimeout=180000; requestMethod="GET"
-                    setRequestProperty("Authorization","Bearer $key"); setRequestProperty("Accept","image/*")
-                }
-                val code=conn.responseCode
-                if(code !in 200..299) {
-                    val detail=try { conn.errorStream?.bufferedReader()?.use { it.readText() } } catch(_:Exception){null}
-                    throw Exception("HTTP $code. " + (detail?.take(180) ?: "Проверь ключ и баланс API."))
-                }
-                val result=conn.inputStream.use { BitmapFactory.decodeStream(it) } ?: throw Exception("Сервис не вернул изображение.")
-                runOnUiThread { image=result; preview.setImageBitmap(result); status.text="Готово! Картинка создана."; generate.isEnabled=true }
-            } catch(e:Exception) {
-                runOnUiThread { status.text="Ошибка: " + (e.message ?: "сбой соединения"); generate.isEnabled=true }
-            } finally { conn?.disconnect() }
-        }.start()
-    }
-
-    private fun saveImage() {
-        if(image==null){status.text="Сначала создай изображение.";return}
-        val intent=Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE); type="image/png"
-            putExtra(Intent.EXTRA_TITLE,"Leningrad-AI-image.png")
+    private fun showAgreement() {
+        root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(24), dp(24), dp(24), dp(24))
+            setBackgroundColor(Color.rgb(15, 10, 12))
         }
-        startActivityForResult(intent,41)
+        root.addView(text("VIRUS 666", 32, true), match())
+        root.addView(text("Это шуточная имитация вируса. Приложение не заражает телефон, не блокирует выход, не удаляет данные и не работает скрытно.", 17, false), match())
+        root.addView(text("Во время 60-секундного эффекта будут медленно меняться цвета и появляться вымышленные предупреждения. В любой момент можно нажать «СТОП» или выйти кнопкой Android «Назад». Эффект не предназначен для людей с фоточувствительностью.", 14, false), match())
+        val agree = Button(this).apply {
+            text = "СОГЛАСЕН — ПРОДОЛЖИТЬ"
+            isAllCaps = false
+            setOnClickListener { requestOverlayOrStart() }
+        }
+        root.addView(agree, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(24) })
+        setContentView(root)
     }
 
-    @Deprecated("Uses Android system document picker")
-    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
-        super.onActivityResult(requestCode,resultCode,data)
-        if(requestCode==41 && resultCode==RESULT_OK) {
-            val uri=data?.data ?: return
-            try {
-                contentResolver.openOutputStream(uri)?.use { image?.compress(Bitmap.CompressFormat.PNG,100,it) }
-                status.text="Изображение сохранено."
-            } catch(e:Exception) { status.text="Не удалось сохранить: " + e.message }
+    private fun requestOverlayOrStart() {
+        if (!Settings.canDrawOverlays(this)) {
+            val info = android.app.AlertDialog.Builder(this)
+                .setTitle("Плавающая кнопка СТОП")
+                .setMessage("Можно разрешить небольшую кнопку «СТОП» поверх окон, чтобы быстро выключить эффект даже после переключения приложения. Это необязательно.")
+                .setNegativeButton("Без разрешения") { _, _ -> showReady() }
+                .setPositiveButton("Открыть настройки") { _, _ ->
+                    startActivityForResult(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")), 77)
+                }.create()
+            info.show()
+        } else showReady()
+    }
+
+    @Deprecated("Uses Android settings activity result")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 77) showReady()
+    }
+
+    private fun showReady() {
+        root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(22), dp(22), dp(22), dp(22))
+            setBackgroundColor(Color.rgb(20, 0, 0))
+        }
+        root.addView(text("⚠ VIRUS 666 ⚠", 29, true), match())
+        status = text("СИСТЕМА ГОТОВА К СИМУЛЯЦИИ", 16, true)
+        root.addView(status, match())
+        timer = text("01:00", 42, true)
+        root.addView(timer, match())
+        startButton = Button(this).apply {
+            text = "ЗАПУСТИТЬ ПРАНК"
+            isAllCaps = false
+            setOnClickListener { startPrank() }
+        }
+        root.addView(startButton, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(20) })
+        val stop = Button(this).apply {
+            text = "СТОП / ВЫХОД"
+            isAllCaps = false
+            setOnClickListener { stopPrank("Эффект остановлен.") }
+        }
+        root.addView(stop, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(10) })
+        setContentView(root)
+    }
+
+    private fun startPrank() {
+        if (running) return
+        running = true
+        seconds = 60
+        startButton.isEnabled = false
+        showOverlayStopButton()
+        tick()
+    }
+
+    private fun tick() {
+        if (!running) return
+        val dark = seconds % 2 == 0
+        root.setBackgroundColor(if (dark) Color.rgb(20, 0, 0) else Color.rgb(55, 0, 0))
+        status.text = when (seconds % 4) {
+            0 -> "ОБНАРУЖЕНА УГРОЗА… (ИМИТАЦИЯ)"
+            1 -> "СКАНИРОВАНИЕ ФАЙЛОВ…"
+            2 -> "ЗАРАЖЕНИЕ: ${100 - seconds}% (ФЕЙК)"
+            else -> "НЕ ПАНИКУЙ — ЭТО ТОЛЬКО ПРАНК"
+        }
+        timer.text = String.format("%02d:%02d", seconds / 60, seconds % 60)
+        if (seconds <= 0) {
+            finishPrank()
+            return
+        }
+        seconds--
+        handler.postDelayed({ tick() }, 1200L)
+    }
+
+    private fun finishPrank() {
+        running = false
+        handler.removeCallbacksAndMessages(null)
+        removeOverlayStopButton()
+        root.setBackgroundColor(Color.rgb(8, 35, 18))
+        status.text = "ЭТО ПРАНК 😂"
+        timer.text = "ТВОЙ ТЕЛЕФОН В ПОРЯДКЕ"
+        startButton.text = "УДАЛИТЬ ПРИЛОЖЕНИЕ"
+        startButton.isEnabled = true
+        startButton.setOnClickListener { requestUninstall() }
+    }
+
+    private fun stopPrank(message: String) {
+        running = false
+        handler.removeCallbacksAndMessages(null)
+        removeOverlayStopButton()
+        if (::status.isInitialized) status.text = message
+        if (::timer.isInitialized) timer.text = "СТОП"
+        if (::startButton.isInitialized) startButton.isEnabled = true
+        root.setBackgroundColor(Color.rgb(15, 10, 12))
+    }
+
+    private fun showOverlayStopButton() {
+        if (!Settings.canDrawOverlays(this)) return
+        try {
+            windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+            val button = Button(this).apply {
+                text = "СТОП ✕"
+                isAllCaps = false
+                setOnClickListener { stopPrank("Эффект остановлен плавающей кнопкой.") }
+            }
+            val params = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                android.graphics.PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.END
+                x = dp(12); y = dp(90)
+            }
+            windowManager?.addView(button, params)
+            overlayView = button
+        } catch (_: Exception) {
+            Toast.makeText(this, "Плавающая кнопка недоступна — используй СТОП в приложении.", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun label(value:String,size:Int,bold:Boolean)=TextView(this).apply {
-        text=value; textSize=size.toFloat(); setTextColor(if(size<=13) 0xFFB2BCD0.toInt() else Color.WHITE)
-        if(bold) typeface=Typeface.DEFAULT_BOLD
-        setPadding(0,dp(8),0,dp(8))
+    private fun removeOverlayStopButton() {
+        try { overlayView?.let { windowManager?.removeView(it) } } catch (_: Exception) {}
+        overlayView = null
     }
-    private fun match()=LinearLayout.LayoutParams(-1,-2)
-    private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
+
+    private fun requestUninstall() {
+        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$packageName"))
+        try { startActivity(intent) } catch (_: Exception) {
+            Toast.makeText(this, "Удалить можно в настройках Android → Приложения.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onBackPressed() {
+        if (running) stopPrank("Ты остановил пранк кнопкой «Назад».")
+        super.onBackPressed()
+    }
+
+    override fun onDestroy() {
+        running = false
+        handler.removeCallbacksAndMessages(null)
+        removeOverlayStopButton()
+        super.onDestroy()
+    }
+
+    private fun text(value: String, size: Int, bold: Boolean) = TextView(this).apply {
+        text = value
+        textSize = size.toFloat()
+        setTextColor(Color.WHITE)
+        gravity = Gravity.CENTER
+        if (bold) typeface = Typeface.DEFAULT_BOLD
+        setPadding(0, dp(12), 0, dp(12))
+    }
+
+    private fun match() = LinearLayout.LayoutParams(-1, -2)
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }
