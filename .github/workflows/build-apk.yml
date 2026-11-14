@@ -1,8 +1,8 @@
-name: Build Grand City 5 APK
+name: Build Leningrad AI Studio APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [ai-image-studio]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +23,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GrandCity5-debug-apk
+          name: LeningradAIStudio-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
