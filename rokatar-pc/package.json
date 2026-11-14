@@ -1,0 +1,16 @@
+{
+  "name": "rokatar-game-launcher",
+  "version": "1.0.0",
+  "description": "Local game library launcher",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win nsis" },
+  "devDependencies": { "electron": "^33.2.1", "electron-builder": "^25.1.8" },
+  "build": {
+    "appId": "com.rokatar.launcher",
+    "productName": "Rokatar Game Launcher",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "index.html", "style.css", "renderer.js"],
+    "win": { "target": ["nsis"], "artifactName": "Rokatar-Game-Launcher-Setup.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true }
+  }
+}
