@@ -3,10 +3,10 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 android {
-    namespace 'ru.leningrad.aistudio'
+    namespace 'ru.leningrad.virusprank'
     compileSdk 35
     defaultConfig {
-        applicationId 'ru.leningrad.aistudio'
+        applicationId 'ru.leningrad.virusprank'
         minSdk 23
         targetSdk 35
         versionCode 1
