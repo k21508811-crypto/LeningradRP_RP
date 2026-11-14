@@ -1,0 +1,22 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+android {
+    namespace 'ru.cityrun.launcher'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'ru.cityrun.launcher'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0-beta'
+        buildConfigField 'String', 'LICENSE_API_BASE_URL', '"' + (project.findProperty('LICENSE_API_BASE_URL') ?: '') + '"'
+    }
+    buildFeatures { buildConfig true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+}
