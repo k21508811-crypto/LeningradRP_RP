@@ -4,20 +4,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090909">
-  <meta name="description" content="Ленинград RP — запусти игру в Roblox.">
+  <meta name="description" content="Ленинград RP — игра, поиск и встроенный сайт.">
   <title>Ленинград RP</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="launcher">
-    <div class="logo" aria-hidden="true">Л</div>
-    <p class="eyebrow">РОЛЕВАЯ ИГРА В ROBLOX</p>
-    <h1>ЛЕНИНГРАД <span>RP</span></h1>
-    <p class="description">Твой город. Твоя история. Твои правила.</p>
-    <a class="play-button" href="https://play.roblox.com/games/start?placeId=86706967486022">ИГРАТЬ <span aria-hidden="true">→</span></a>
-    <p class="hint">Для запуска игры на устройстве должен быть установлен Roblox.</p>
-    <footer>© <span id="year"></span> ЛЕНИНГРАД RP</footer>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="На главную" onclick="showHome(); return false;"><span>Л</span> ЛЕНИНГРАД <b>RP</b></a>
+    <nav aria-label="Разделы">
+      <button class="nav-button active" data-tab="home" onclick="showHome()">Главная</button>
+      <button class="nav-button" data-tab="search" onclick="showSearch()">Яндекс</button>
+      <button class="nav-button" data-tab="site" onclick="showSite()">Сайт</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="panel home-panel">
+      <div class="logo">Л</div>
+      <p class="eyebrow">РОЛЕВАЯ ИГРА В ROBLOX</p>
+      <h1>ЛЕНИНГРАД <span>RP</span></h1>
+      <p class="description">Твой город. Твоя история. Твои правила.</p>
+      <a class="play-button" href="https://play.roblox.com/games/start?placeId=86706967486022">ИГРАТЬ <span>→</span></a>
+      <p class="hint">Для запуска игры должен быть установлен Roblox.</p>
+      <div class="quick-links">
+        <button class="secondary-button" onclick="showSearch()">🔎 Поиск Яндекс</button>
+        <button class="secondary-button" onclick="showSite()">🌐 Proverka29.ru</button>
+      </div>
+    </section>
+
+    <section id="search" class="panel content-panel" hidden>
+      <p class="eyebrow">ПОИСК В ИНТЕРНЕТЕ</p>
+      <h2>Яндекс</h2>
+      <form id="search-form">
+        <input id="search-query" type="search" placeholder="Что будем искать?" autocomplete="off" aria-label="Поисковый запрос">
+        <button class="play-button search-button" type="submit">НАЙТИ</button>
+      </form>
+      <p class="hint">Результаты откроются внутри приложения.</p>
+    </section>
+
+    <section id="site" class="panel content-panel" hidden>
+      <p class="eyebrow">ВСТРОЕННЫЙ САЙТ</p>
+      <h2>Proverka29.ru</h2>
+      <p class="description">Открыть сайт во встроенном окне приложения.</p>
+      <button class="play-button" id="open-site" type="button">ОТКРЫТЬ САЙТ <span>→</span></button>
+      <p class="hint">Будь осторожен: не вводи пароли и платёжные данные, если не уверен в сайте.</p>
+    </section>
   </main>
+
+  <footer>© <span id="year"></span> ЛЕНИНГРАД RP</footer>
   <script src="script.js"></script>
 </body>
 </html>
