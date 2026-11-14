@@ -117,8 +117,8 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun label(value:String,size:Float,bold:Boolean)=TextView(this).apply {
-        text=value; textSize=size; setTextColor(if(size<=13f) 0xFFB2BCD0.toInt() else Color.WHITE)
+    private fun label(value:String,size:Int,bold:Boolean)=TextView(this).apply {
+        text=value; textSize=size.toFloat(); setTextColor(if(size<=13) 0xFFB2BCD0.toInt() else Color.WHITE)
         if(bold) typeface=Typeface.DEFAULT_BOLD
         setPadding(0,dp(8),0,dp(8))
     }
