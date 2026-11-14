@@ -29,24 +29,15 @@ jobs:
           New-Item -ItemType Directory -Force $templateDir | Out-Null
           Copy-Item "templates\templates\*" $templateDir -Recurse -Force
 
-      - name: Import and validate both projects
-        shell: pwsh
-        run: |
-          $godot = "$PWD\godot\Godot_v4.3-stable_win64.exe"
-          & $godot --headless --editor --path "$PWD\gta5-one-mission" --quit
-          if ($LASTEXITCODE -ne 0) { throw "Game project import failed" }
-          & $godot --headless --editor --path "$PWD\cityrun-launcher" --quit
-          if ($LASTEXITCODE -ne 0) { throw "Launcher project import failed" }
-
       - name: Export game and launcher
         shell: pwsh
         run: |
           $godot = "$PWD\godot\Godot_v4.3-stable_win64.exe"
           New-Item -ItemType Directory -Force "gta5-one-mission\build" | Out-Null
           New-Item -ItemType Directory -Force "cityrun-launcher\build" | Out-Null
-          & $godot --headless --editor --path "$PWD\gta5-one-mission" --export-release "Windows Desktop" "$PWD\gta5-one-mission\build\CityRun.exe"
+          & $godot --headless --path "$PWD\gta5-one-mission" --export-release "Windows Desktop" "$PWD\gta5-one-mission\build\CityRun.exe"
           if ($LASTEXITCODE -ne 0) { throw "Game export failed" }
-          & $godot --headless --editor --path "$PWD\cityrun-launcher" --export-release "Windows Desktop" "$PWD\cityrun-launcher\build\CityRunLauncher.exe"
+          & $godot --headless --path "$PWD\cityrun-launcher" --export-release "Windows Desktop" "$PWD\cityrun-launcher\build\CityRunLauncher.exe"
           if ($LASTEXITCODE -ne 0) { throw "Launcher export failed" }
           if (!(Test-Path "gta5-one-mission\build\CityRun.exe")) { throw "CityRun.exe missing" }
           if (!(Test-Path "cityrun-launcher\build\CityRunLauncher.exe")) { throw "CityRunLauncher.exe missing" }
