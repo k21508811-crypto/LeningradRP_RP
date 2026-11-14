@@ -10,11 +10,17 @@ var checkpoint := Vector3(0, 0.5, -42)
 var hud: Label
 var prompt: Label
 var speed := 0.0
+var parcel: Node3D
+var traffic: Array[Node3D] = []
+var traffic_speeds: Array[float] = []
+var traffic_lanes: Array[float] = [-4.2, 4.2]
 
 func _ready() -> void:
 	_build_city()
 	_build_player()
 	_build_car()
+	_build_parcel()
+	_spawn_traffic()
 	_build_ui()
 	_add_checkpoint(checkpoint)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -201,6 +207,55 @@ func _build_car() -> void:
 	car.position = Vector3(0,0,1)
 	add_child(car)
 
+func _build_parcel() -> void:
+	parcel = Node3D.new()
+	parcel.position = Vector3(0, 0, -95)
+	var crate := MeshInstance3D.new()
+	var crate_mesh := BoxMesh.new()
+	crate_mesh.size = Vector3(0.85, 0.65, 0.85)
+	crate.mesh = crate_mesh
+	var crate_mat := StandardMaterial3D.new()
+	crate_mat.albedo_color = Color(0.62, 0.36, 0.14)
+	crate_mat.roughness = 0.88
+	crate.material_override = crate_mat
+	crate.position.y = 0.42
+	parcel.add_child(crate)
+	var glow := OmniLight3D.new()
+	glow.light_color = Color(1.0, 0.62, 0.2)
+	glow.light_energy = 0.8
+	glow.omni_range = 3.5
+	glow.position.y = 1.2
+	parcel.add_child(glow)
+	add_child(parcel)
+
+func _spawn_traffic() -> void:
+	var paints := [Color(0.12,0.32,0.68), Color(0.72,0.72,0.68), Color(0.12,0.42,0.28), Color(0.72,0.38,0.08)]
+	for i in range(8):
+		var vehicle := Node3D.new()
+		var body := MeshInstance3D.new()
+		var body_mesh := BoxMesh.new()
+		body_mesh.size = Vector3(1.8, 0.65, 3.5)
+		body.mesh = body_mesh
+		var paint := StandardMaterial3D.new()
+		paint.albedo_color = paints[i % paints.size()]
+		paint.roughness = 0.32
+		body.material_override = paint
+		body.position.y = 0.62
+		vehicle.add_child(body)
+		var cabin := MeshInstance3D.new()
+		var cabin_mesh := BoxMesh.new()
+		cabin_mesh.size = Vector3(1.45, 0.55, 1.55)
+		cabin.mesh = cabin_mesh
+		var glass := StandardMaterial3D.new()
+		glass.albedo_color = Color(0.06,0.12,0.17)
+		cabin.material_override = glass
+		cabin.position = Vector3(0, 1.17, -0.15)
+		vehicle.add_child(cabin)
+		vehicle.position = Vector3(traffic_lanes[i % 2], 0, 10.0 - float(i) * 24.0)
+		add_child(vehicle)
+		traffic.append(vehicle)
+		traffic_speeds.append(7.0 + float(i % 4) * 1.8)
+
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -263,6 +318,13 @@ func _physics_process(delta: float) -> void:
 		_walk_player(delta)
 	_update_mission()
 
+func _process(delta: float) -> void:
+	for i in range(traffic.size()):
+		var vehicle := traffic[i]
+		vehicle.position.z -= traffic_speeds[i] * delta
+		if vehicle.position.z < -190.0:
+			vehicle.position.z = 12.0 + float(i % 3) * 18.0
+
 func _walk_player(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left","move_right","move_forward","move_back")
 	var direction := (player.transform.basis * Vector3(input_dir.x,0,input_dir.y)).normalized()
@@ -304,25 +366,26 @@ func _drive_car(delta: float) -> void:
 
 func _update_mission() -> void:
 	var current := car.global_position if in_car else player.global_position
-	var distance := Vector2(current.x-checkpoint.x,current.z-checkpoint.z).length()
-	if mission_stage == 3:
-		return
-	if mission_stage == 0 and distance < 5.0:
+	if mission_stage == 0 and current.distance_to(checkpoint) < 7.0:
 		mission_stage = 1
-		checkpoint = Vector3(0,0.5,-95)
+		checkpoint = Vector3(0, 0.5, -95)
 		_add_checkpoint(checkpoint)
-	elif mission_stage == 1 and distance < 6.0:
-		mission_stage = 2
-		checkpoint = Vector3(0,0.5,-166)
-		_add_checkpoint(checkpoint)
-	elif mission_stage == 2 and distance < 7.0:
+	elif mission_stage == 1:
+		if not in_car and player.global_position.distance_to(parcel.global_position) < 3.0 and Input.is_action_just_pressed("interact"):
+			parcel.visible = false
+			mission_stage = 2
+			checkpoint = Vector3(0, 0.5, -166)
+			_add_checkpoint(checkpoint)
+	elif mission_stage == 2 and in_car and current.distance_to(checkpoint) < 8.0:
 		mission_stage = 3
-		hud.text = "МИССИЯ ВЫПОЛНЕНА!  Награда: $5 000"
+		hud.text = "CITY RUN  |  МИССИЯ ВЫПОЛНЕНА!  Награда: $5 000"
 		prompt.text = "Посылка доставлена. Отличная работа!"
 		return
-	var titles := ["ЭТАП 1/3 — Найди машину и доберись до встречи","ЭТАП 2/3 — Забери посылку на площади","ЭТАП 3/3 — Доставь посылку в гараж"]
-	hud.text = "CITY RUN  |  " + titles[min(mission_stage,2)]
-	if not in_car and player.global_position.distance_to(car.global_position) < 4.0:
+	var titles := ["ЭТАП 1/3 — Найди машину и доберись до встречи", "ЭТАП 2/3 — Выйди из машины и забери посылку (E)", "ЭТАП 3/3 — Доставь посылку в гараж"]
+	hud.text = "CITY RUN  |  " + titles[min(mission_stage, 2)]
+	if mission_stage == 1 and not in_car and player.global_position.distance_to(parcel.global_position) < 3.0:
+		prompt.text = "Нажми E, чтобы забрать посылку"
+	elif not in_car and player.global_position.distance_to(car.global_position) < 4.0:
 		prompt.text = "Нажми E, чтобы сесть в машину"
 	elif in_car:
 		prompt.text = "Нажми E, чтобы выйти из машины"
