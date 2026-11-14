@@ -47,22 +47,40 @@ jobs:
         run: |
           $projectDir = Join-Path $PWD "gta5-one-mission"
           $buildDir = Join-Path $projectDir "build"
+          $godotExe = Join-Path $PWD "godot\Godot_v4.3-stable_win64.exe"
           New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
-          & "godot\Godot_v4.3-stable_win64.exe" --headless --verbose --path $projectDir --export-release "Windows Desktop" (Join-Path $buildDir "CityRun.exe")
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Write-Host "Files produced by Godot export:"
-          Get-ChildItem -Path $projectDir -Recurse -File | Where-Object { $_.Extension -in ".exe", ".pck" } | Select-Object FullName,Length
           $expectedExe = Join-Path $buildDir "CityRun.exe"
-          if (!(Test-Path $expectedExe)) {
-            $foundExe = Get-ChildItem -Path $projectDir -Recurse -Filter "*.exe" -File | Select-Object -First 1
-            if ($null -ne $foundExe) {
-              Copy-Item $foundExe.FullName $expectedExe -Force
-              Write-Host "Copied exported executable from $($foundExe.FullName)"
-            } else {
-              throw "Godot reported export success but no Windows executable was produced"
-            }
+          $exportLog = Join-Path $buildDir "godot-export.log"
+
+          Write-Host "Project: $projectDir"
+          Write-Host "Godot: $godotExe"
+          Write-Host "Preset file:"
+          Get-Content (Join-Path $projectDir "export_presets.cfg")
+
+          & $godotExe --headless --editor --path $projectDir --export-release "Windows Desktop" $expectedExe 2>&1 | Tee-Object -FilePath $exportLog
+          $godotExit = $LASTEXITCODE
+          Write-Host "Godot export exit code: $godotExit"
+          Write-Host "Export log saved to: $exportLog"
+
+          Write-Host "Files in build directory:"
+          Get-ChildItem -Path $buildDir -Force | Select-Object FullName,Length
+
+          if ($godotExit -ne 0) {
+            throw "Godot export failed with exit code $godotExit. See $exportLog"
           }
-          if (!(Test-Path $expectedExe)) { throw "Expected executable missing after export: $expectedExe" }
+          if (!(Test-Path $expectedExe)) {
+            Write-Host "All executable and PCK files under project:"
+            Get-ChildItem -Path $projectDir -Recurse -File | Where-Object { $_.Extension -in ".exe", ".pck" } | Select-Object FullName,Length
+            Write-Host "Last 150 lines of Godot export log:"
+            Get-Content $exportLog -Tail 150
+            throw "Godot returned success but did not create $expectedExe"
+          }
+
+          $exeInfo = Get-Item $expectedExe
+          if ($exeInfo.Length -lt 1000000) {
+            throw "Exported EXE looks incomplete: only $($exeInfo.Length) bytes"
+          }
+          Write-Host "Exported executable: $($exeInfo.FullName) ($($exeInfo.Length) bytes)"
 
       - name: Package game
         shell: pwsh
