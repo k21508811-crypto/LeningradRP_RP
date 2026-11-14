@@ -1,8 +1,8 @@
-name: Build Leningrad AI Studio APK
+name: Build VIRUS 666 Prank APK
 on:
   workflow_dispatch:
   push:
-    branches: [ai-image-studio]
+    branches: [virus-prank]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +23,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LeningradAIStudio-debug-apk
+          name: VIRUS-666-prank-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
