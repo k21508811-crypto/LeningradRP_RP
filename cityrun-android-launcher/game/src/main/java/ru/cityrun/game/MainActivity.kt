@@ -13,11 +13,11 @@ class MainActivity : Activity() {
         window.statusBarColor = Color.rgb(10, 12, 17)
         window.navigationBarColor = Color.rgb(10, 12, 17)
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        setContentView(RoadGameView())
+        setContentView(RoadGameView(this))
     }
 }
 
-private class RoadGameView : View(null) {
+private class RoadGameView(context: android.content.Context) : View(context) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private var carX = 0f
     private var roadOffset = 0f
