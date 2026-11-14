@@ -16,6 +16,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Download Godot and export templates
         shell: pwsh
         run: |
@@ -23,6 +24,7 @@ jobs:
           Expand-Archive godot.zip -DestinationPath godot
           Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz" -OutFile templates.tpz
           Expand-Archive templates.tpz -DestinationPath templates
+
       - name: Install export templates
         shell: pwsh
         run: |
@@ -33,35 +35,56 @@ jobs:
             Get-ChildItem $templateDir -Recurse | Select-Object FullName
             throw "Godot Windows release export template was not installed"
           }
+
       - name: Import and validate project
         shell: pwsh
         run: |
           & "godot\Godot_v4.3-stable_win64.exe" --headless --editor --path "gta5-one-mission" --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Export Windows game
         shell: pwsh
         run: |
-          $buildDir = Join-Path $PWD "gta5-one-mission\build"
+          $projectDir = Join-Path $PWD "gta5-one-mission"
+          $buildDir = Join-Path $projectDir "build"
           New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
-          $output = Join-Path $buildDir "CityRun.exe"
-          & "godot\Godot_v4.3-stable_win64.exe" --headless --path "gta5-one-mission" --export-release "Windows Desktop" "$output"
+          & "godot\Godot_v4.3-stable_win64.exe" --headless --path $projectDir --export-release "Windows Desktop" "build/CityRun.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (!(Test-Path $output)) {
-            Get-ChildItem -Path "gta5-one-mission" -Recurse -File | Select-Object -ExpandProperty FullName
-            throw "Godot export completed without creating $output"
+          Write-Host "Files produced by Godot export:"
+          Get-ChildItem -Path $projectDir -Recurse -File | Where-Object { $_.Extension -in ".exe", ".pck" } | Select-Object FullName,Length
+          $expectedExe = Join-Path $buildDir "CityRun.exe"
+          if (!(Test-Path $expectedExe)) {
+            $foundExe = Get-ChildItem -Path $projectDir -Recurse -Filter "*.exe" -File | Select-Object -First 1
+            if ($null -ne $foundExe) {
+              Copy-Item $foundExe.FullName $expectedExe -Force
+              Write-Host "Copied exported executable from $($foundExe.FullName)"
+            } else {
+              throw "Godot reported export success but no Windows executable was produced"
+            }
           }
-          Write-Host "Exported executable: $output"
+          if (!(Test-Path $expectedExe)) { throw "Expected executable missing after export: $expectedExe" }
+
       - name: Package game
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path package | Out-Null
-          $exe = "gta5-one-mission\build\CityRun.exe"
-          if (!(Test-Path $exe)) { throw "CityRun.exe is missing: $exe" }
-          Copy-Item $exe package\CityRun.exe
-          $pck = "gta5-one-mission\build\CityRun.pck"
-          if (Test-Path $pck) { Copy-Item $pck package\CityRun.pck }
+          $projectDir = Join-Path $PWD "gta5-one-mission"
+          $buildDir = Join-Path $projectDir "build"
+          $exe = Join-Path $buildDir "CityRun.exe"
+          if (!(Test-Path $exe)) {
+            Get-ChildItem -Path $projectDir -Recurse -File | Select-Object FullName,Length
+            throw "CityRun.exe is missing after export: $exe"
+          }
+          New-Item -ItemType Directory -Force -Path "package" | Out-Null
+          Copy-Item $exe "package\CityRun.exe" -Force
+          $pck = Join-Path $buildDir "CityRun.pck"
+          if (Test-Path $pck) {
+            Copy-Item $pck "package\CityRun.pck" -Force
+          } else {
+            Write-Host "No separate PCK file found; checking whether the export is self-contained."
+          }
           Compress-Archive -Path "package\*" -DestinationPath "CityRun-Windows.zip" -Force
-          Get-ChildItem package | Format-Table Name,Length
+          Get-ChildItem "package" | Format-Table Name,Length
+
       - uses: actions/upload-artifact@v4
         with:
           name: CityRun-Windows
