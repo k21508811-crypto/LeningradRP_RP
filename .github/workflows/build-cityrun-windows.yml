@@ -48,7 +48,7 @@ jobs:
           $projectDir = Join-Path $PWD "gta5-one-mission"
           $buildDir = Join-Path $projectDir "build"
           New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
-          & "godot\Godot_v4.3-stable_win64.exe" --headless --path $projectDir --export-release "Windows Desktop" "build/CityRun.exe"
+          & "godot\Godot_v4.3-stable_win64.exe" --headless --verbose --path $projectDir --export-release "Windows Desktop" (Join-Path $buildDir "CityRun.exe")
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Write-Host "Files produced by Godot export:"
           Get-ChildItem -Path $projectDir -Recurse -File | Where-Object { $_.Extension -in ".exe", ".pck" } | Select-Object FullName,Length
