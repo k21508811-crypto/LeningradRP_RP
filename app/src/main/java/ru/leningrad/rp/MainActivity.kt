@@ -64,7 +64,7 @@ private class CityGameView(context: android.content.Context) : View(context) {
         p.color=Color.WHITE;p.textAlign=Paint.Align.LEFT;p.textSize=dp(17f);c.drawText("GRAND CITY 5",dp(25f),dp(42f),p)
         p.color=Color.rgb(255,196,45);p.textSize=dp(14f);c.drawText("$ $cash",dp(25f),dp(70f),p)
         p.color=Color.WHITE;p.textAlign=Paint.Align.RIGHT;c.drawText("МИССИЯ "+(mission+1),width-dp(24f),dp(57f),p)
-        p.color=0x668FFFFFF.toInt();c.drawCircle(dp(92f),height-dp(112f),dp(62f),p)
+        p.color=0x66888888.toInt();c.drawCircle(dp(92f),height-dp(112f),dp(62f),p)
         p.color=0x99FFFFFF.toInt();c.drawCircle(dp(92f)+dx*dp(25f),height-dp(112f)+dy*dp(25f),dp(25f),p)
         button(c,width-dp(94f),height-dp(190f),"ГАЗ",gas);button(c,width-dp(94f),height-dp(105f),if(inCar)"ВЫЙТИ" else "МАШИНА",false);button(c,width-dp(94f),height-dp(30f),"ТОРМОЗ",brake)
         p.color=Color.WHITE;p.textSize=dp(11f);p.textAlign=Paint.Align.CENTER;c.drawText("Доберись до жёлтой метки",width/2f,height-dp(18f),p)
