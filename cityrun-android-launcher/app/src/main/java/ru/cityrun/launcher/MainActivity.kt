@@ -31,7 +31,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(9, 11, 16)
         window.navigationBarColor = Color.rgb(9, 11, 16)
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+        window.decorView.systemUiVisibility = 0
 
         val page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
