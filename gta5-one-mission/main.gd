@@ -357,6 +357,11 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		if in_car:
 			_exit_car()
+		elif mission_stage == 1 and player.global_position.distance_to(parcel.global_position) < 3.0:
+			parcel.visible = false
+			mission_stage = 2
+			checkpoint = Vector3(0, 0.5, -166)
+			_add_checkpoint(checkpoint)
 		elif player.global_position.distance_to(car.global_position) < 4.0:
 			_enter_car()
 	if in_car:
@@ -397,6 +402,8 @@ func _exit_car() -> void:
 	player.global_position = car.global_position + car.global_transform.basis.x*2.2
 	player.visible = true
 	camera_pivot.top_level = false
+	camera_pivot.position = Vector3(0, 1.5, 0)
+	camera_pivot.rotation = Vector3.ZERO
 	player.rotate_y(car.rotation.y)
 	camera.current = true
 
@@ -417,12 +424,6 @@ func _update_mission() -> void:
 		mission_stage = 1
 		checkpoint = Vector3(0, 0.5, -95)
 		_add_checkpoint(checkpoint)
-	elif mission_stage == 1:
-		if not in_car and player.global_position.distance_to(parcel.global_position) < 3.0 and Input.is_action_just_pressed("interact"):
-			parcel.visible = false
-			mission_stage = 2
-			checkpoint = Vector3(0, 0.5, -166)
-			_add_checkpoint(checkpoint)
 	elif mission_stage == 2 and in_car and current.distance_to(checkpoint) < 8.0:
 		mission_stage = 3
 		hud.text = "CITY RUN  |  МИССИЯ ВЫПОЛНЕНА!  Награда: $5 000"
