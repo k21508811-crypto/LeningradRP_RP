@@ -146,7 +146,9 @@ func _build_ui() -> void:
     hud.text = "WASD — движение   E — сесть/выйти   Мышь — обзор   ESC — курсор"
 
 func _walk_player(delta: float) -> void:
-    var input := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+    var input := Vector2.ZERO
+    input.x = float(Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)) - float(Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT))
+    input.y = float(Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)) - float(Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP))
     var forward := Vector3(sin(yaw), 0, cos(yaw))
     var right := Vector3(forward.z, 0, -forward.x)
     var direction := (right * input.x + forward * input.y).normalized()
@@ -161,8 +163,8 @@ func _walk_player(delta: float) -> void:
         player.rotation.y = atan2(direction.x, direction.z)
 
 func _drive_car(_delta: float) -> void:
-    var throttle := Input.get_action_strength("ui_up") - Input.get_action_strength("ui_down")
-    var steering := Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")
+    var throttle := float(Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP)) - float(Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN))
+    var steering := float(Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)) - float(Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT))
     car.rotation.y -= steering * 1.65 * get_physics_process_delta_time() * maxf(absf(throttle), 0.25)
     var forward := Vector3(sin(car.rotation.y), 0, cos(car.rotation.y))
     car.velocity = forward * throttle * CAR_SPEED
