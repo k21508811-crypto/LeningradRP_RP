@@ -8,6 +8,9 @@ on:
       - ".github/workflows/build-cityrun-windows.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -26,22 +29,26 @@ jobs:
           $templateDir = "$env:APPDATA\Godot\export_templates\4.3.stable"
           New-Item -ItemType Directory -Force -Path $templateDir | Out-Null
           Copy-Item "templates\templates\*" $templateDir -Recurse -Force
-      - name: Import project
+      - name: Import and validate project
         shell: pwsh
         run: |
           & "godot\Godot_v4.3-stable_win64.exe" --headless --editor --path "gta5-one-mission" --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Export Windows game
         shell: pwsh
         run: |
-          & "godot\Godot_v4.3-stable_win64.exe" --headless --path "gta5-one-mission" --export-release "Windows Desktop" "gta5-one-mission\CityRun.exe"
+          $output = Join-Path $PWD "gta5-one-mission\CityRun.exe"
+          & "godot\Godot_v4.3-stable_win64.exe" --headless --path "gta5-one-mission" --export-release "Windows Desktop" $output
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (!(Test-Path $output)) { throw "Godot export did not create CityRun.exe at $output" }
       - name: Package game
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item "gta5-one-mission\CityRun.exe" package\
-          Copy-Item "gta5-one-mission\CityRun.pck" package\ -ErrorAction SilentlyContinue
+          if (Test-Path "gta5-one-mission\CityRun.pck") { Copy-Item "gta5-one-mission\CityRun.pck" package\ }
           Compress-Archive -Path "package\*" -DestinationPath "CityRun-Windows.zip" -Force
+          Get-ChildItem package | Format-Table Name,Length
       - uses: actions/upload-artifact@v4
         with:
           name: CityRun-Windows
