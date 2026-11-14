@@ -1,0 +1,27 @@
+name: Build Rokatar Windows Installer
+on:
+  push:
+    branches: [rokatar-launcher]
+    paths: ['rokatar-pc/**', '.github/workflows/rokatar-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: rokatar-pc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: rokatar-pc/package.json
+      - run: npm install
+      - run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Rokatar-Game-Launcher-Windows-Installer
+          path: rokatar-pc/dist/*.exe
