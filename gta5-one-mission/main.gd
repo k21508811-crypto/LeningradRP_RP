@@ -42,7 +42,9 @@ func _box(label: String, pos: Vector3, size: Vector3, color: Color, solid := tru
 func _build_city() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -25, 0)
-	sun.light_energy = 1.2
+	sun.light_energy = 1.35
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 120.0
 	add_child(sun)
 	var world := WorldEnvironment.new()
 	var env := Environment.new()
@@ -51,6 +53,13 @@ func _build_city() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.55, 0.62, 0.72)
 	env.ambient_light_energy = 0.8
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.05
+	env.glow_enabled = true
+	env.glow_intensity = 0.35
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.48, 0.56, 0.66)
+	env.fog_density = 0.0018
 	world.environment = env
 	add_child(world)
 	_box("Ground", Vector3(0,-0.6,-65), Vector3(100,1,210), Color(0.12,0.16,0.14))
@@ -62,9 +71,71 @@ func _build_city() -> void:
 			var w := 8.0 + float((i*7)%5)
 			var h := 9.0 + float((i*11)%22)
 			_box("Building", Vector3(side*(17+w*0.5),h*0.5-0.1,z), Vector3(w,h,13), Color(0.24+float(i%3)*0.04,0.27,0.31))
+			_add_building_windows(side, 17.0 + w * 0.5, z, w, h, i)
 	for z in range(-10,-190,-10):
 		_box("Lane marking", Vector3(0,0.04,z), Vector3(0.18,0.025,4), Color(0.85,0.78,0.48), false)
 	_box("Garage plaza", Vector3(0,0.02,-166), Vector3(34,0.2,20), Color(0.23,0.27,0.25))
+	for z in range(-18, -175, -24):
+		_add_streetlight(-10.8, z)
+		_add_streetlight(10.8, z)
+	for i in range(12):
+		var tree_z := -12.0 - float(i) * 13.0
+		_add_tree(-12.5, tree_z)
+		_add_tree(12.5, tree_z - 5.0)
+
+
+func _add_building_windows(side: int, x: float, z: float, width: float, height: float, seed: int) -> void:
+	var columns := maxi(2, int(width / 2.3))
+	var rows := maxi(2, int(height / 2.4))
+	for row in range(rows):
+		for col in range(columns):
+			var wx := float(col) * (width / float(columns)) - width * 0.5 + width / float(columns) * 0.5
+			var wy := 1.8 + float(row) * 2.2
+			if wy > height - 1.0:
+				continue
+			var tint := Color(0.16, 0.24, 0.31)
+			if (row * 7 + col * 3 + seed) % 5 == 0:
+				tint = Color(0.95, 0.66, 0.28)
+			var pane := MeshInstance3D.new()
+			var pane_mesh := BoxMesh.new()
+			pane_mesh.size = Vector3(0.72, 0.95, 0.07)
+			pane.mesh = pane_mesh
+			var pane_mat := StandardMaterial3D.new()
+			pane_mat.albedo_color = tint
+			if tint.r > 0.8:
+				pane_mat.emission_enabled = true
+				pane_mat.emission = Color(0.55, 0.25, 0.07)
+			pane.material_override = pane_mat
+			pane.position = Vector3(x + wx, wy, z + (6.56 * float(side)))
+			add_child(pane)
+
+func _add_streetlight(x: float, z: float) -> void:
+	_box("Lamp post", Vector3(x, 3.0, z), Vector3(0.12, 6.0, 0.12), Color(0.12, 0.13, 0.15))
+	var head := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.28
+	mesh.height = 0.5
+	head.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.78, 0.48)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.52, 0.2)
+	head.material_override = mat
+	head.position = Vector3(x, 6.1, z)
+	add_child(head)
+
+func _add_tree(x: float, z: float) -> void:
+	_box("Tree trunk", Vector3(x, 1.0, z), Vector3(0.45, 2.0, 0.45), Color(0.22, 0.13, 0.08))
+	var crown := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 1.65
+	mesh.height = 3.0
+	crown.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.10, 0.28, 0.16)
+	crown.material_override = mat
+	crown.position = Vector3(x, 3.0, z)
+	add_child(crown)
 
 func _build_player() -> void:
 	player = CharacterBody3D.new()
@@ -89,7 +160,8 @@ func _build_player() -> void:
 	camera_pivot.position.y = 1.5
 	player.add_child(camera_pivot)
 	camera = Camera3D.new()
-	camera.position = Vector3(0,1,5.5)
+	camera.position = Vector3(0,1.2,6.2)
+	camera.fov = 76
 	camera.rotation_degrees.x = -10
 	camera.current = true
 	camera_pivot.add_child(camera)
@@ -104,6 +176,9 @@ func _build_car() -> void:
 	chassis.mesh = mesh
 	var paint := StandardMaterial3D.new()
 	paint.albedo_color = Color(0.68,0.08,0.06)
+	paint.roughness = 0.24
+	paint.clearcoat_enabled = true
+	paint.clearcoat = 0.7
 	paint.metallic = 0.35
 	chassis.material_override = paint
 	chassis.position.y = 0.7
@@ -230,6 +305,8 @@ func _drive_car(delta: float) -> void:
 func _update_mission() -> void:
 	var current := car.global_position if in_car else player.global_position
 	var distance := Vector2(current.x-checkpoint.x,current.z-checkpoint.z).length()
+	if mission_stage == 3:
+		return
 	if mission_stage == 0 and distance < 5.0:
 		mission_stage = 1
 		checkpoint = Vector3(0,0.5,-95)
