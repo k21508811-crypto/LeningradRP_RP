@@ -1,0 +1,29 @@
+name: Package PC mission prototype
+
+on:
+  push:
+    branches: [gta5-pc-mission]
+    paths:
+      - "GTA5-One-Mission/**"
+      - ".github/workflows/gta5-one-mission-source.yml"
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate project files
+        run: |
+          test -f GTA5-One-Mission/project.godot
+          test -f GTA5-One-Mission/Main.tscn
+          test -f GTA5-One-Mission/main.gd
+      - name: Package Godot project
+        run: |
+          cd GTA5-One-Mission
+          zip -r ../City-Stories-Chapter-01-Source.zip . -x ".godot/*"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: City-Stories-Chapter-01-Source
+          path: City-Stories-Chapter-01-Source.zip
+          if-no-files-found: error
