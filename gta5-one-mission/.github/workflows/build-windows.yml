@@ -1,0 +1,48 @@
+name: Build City Run for Windows
+
+on:
+  push:
+    branches: [gta5-one-mission]
+    paths:
+      - "gta5-one-mission/**"
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Godot and export templates
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_win64.exe.zip" -OutFile godot.zip
+          Expand-Archive godot.zip -DestinationPath godot
+          Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz" -OutFile templates.tpz
+          Expand-Archive templates.tpz -DestinationPath templates
+      - name: Install export templates
+        shell: pwsh
+        run: |
+          $templateDir = "$env:APPDATA\Godot\export_templates\4.3.stable"
+          New-Item -ItemType Directory -Force -Path $templateDir | Out-Null
+          Copy-Item "templates\templates\*" $templateDir -Recurse -Force
+      - name: Import project
+        shell: pwsh
+        run: |
+          & "godot\Godot_v4.3-stable_win64.exe" --headless --editor --path "gta5-one-mission" --quit
+      - name: Export Windows game
+        shell: pwsh
+        run: |
+          & "godot\Godot_v4.3-stable_win64.exe" --headless --path "gta5-one-mission" --export-release "Windows Desktop" "gta5-one-mission\CityRun.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package game
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item "gta5-one-mission\CityRun.exe" package\
+          Copy-Item "gta5-one-mission\CityRun.pck" package\ -ErrorAction SilentlyContinue
+          Compress-Archive -Path "package\*" -DestinationPath "CityRun-Windows.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CityRun-Windows
+          path: CityRun-Windows.zip
+          if-no-files-found: error
