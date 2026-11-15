@@ -5,6 +5,9 @@ Windows installer scaffold for GTA V Legacy + LSPDFR.
 ## Test access
 The prototype accepts the test code `MENUBUC2`. This is a local test gate only. It is not connected to a payment provider, does not verify purchases, and must not be used as production licensing.
 
+## Planned in-game menu
+The main in-game menu is intended to open and close with **F12**. This hotkey is recorded in the installer configuration, but it will only work after the RAGE Plugin Hook runtime DLL is implemented.
+
 ## What this build does
 - asks for the test access code;
 - locates the GTA V root folder or asks the user to select it;
