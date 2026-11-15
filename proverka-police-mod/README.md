@@ -1,20 +1,26 @@
 # Proverka Police Mod
 
-Initial RAGE Plugin Hook plugin + Windows installer for GTA V Legacy.
+RAGE Plugin Hook add-on for GTA V Legacy. Version 0.4.0.
 
-## Implemented in 0.2.0
-- RAGE Plugin Hook plugin entry point.
-- F12 opens and closes the in-game menu.
-- ESC closes the menu.
-- Windows installer copies `ProverkaPoliceMod.dll` to `GTA V/Plugins`.
+## Controls
+- F12: open/close the in-game menu.
+- Up/Down: select a command.
+- Enter: execute.
+- Esc: close the menu.
 
-## Not implemented yet
-Partner management, Ultimate Backup integration, vehicle spawning, dispatcher actions and custom text-to-speech are planned modules. The current menu shell does not claim these features are functional.
+## Included gameplay functions
+- Create up to three local police partner peds; issue follow/hold commands.
+- Order recruited partners into the player's current vehicle.
+- Spawn POLICE, POLICE2 and POLICE3 vehicles.
+- Create and remove two local backup units and their police vehicles.
+- Enter custom Russian or English text; show it as an in-game subtitle and send it to Windows System.Speech.
 
-## Test access
-The installer accepts `MENUBUC2` as a temporary local test code. It is not payment verification or production licensing. The code is visible in this public source repository.
+## Compatibility notes
+- Built for .NET Framework 4.8 and the RAGE Plugin Hook SDK package.
+- Install a compatible RAGE Plugin Hook and LSPDFR release for GTA V Legacy separately.
+- The backup command currently creates local RAGE Plugin Hook entities. It is NOT a call to LSPDFR's dispatch system and is NOT integrated with Ultimate Backup. That integration requires a compatible public API/SDK for the exact installed Ultimate Backup version.
+- Speech output depends on Windows voices installed on the user's system. Russian speech requires a Russian Windows speech voice.
+- The in-game text-entry dialog temporarily switches focus to Windows.
 
 ## Build
-GitHub Actions restores the RAGE Plugin Hook SDK package from NuGet, builds the plugin against it, packages the DLL into the PyInstaller installer, and uploads the Windows installer artifact. RAGE Plugin Hook itself is not bundled; users must install it separately.
-
-RAGE Plugin Hook SDK package: https://www.nuget.org/packages/RagePluginHook
+GitHub Actions builds the plugin DLL and a Windows installer. RAGE Plugin Hook itself is not redistributed.
