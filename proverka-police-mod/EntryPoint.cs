@@ -29,6 +29,9 @@ namespace ProverkaPoliceMod
         private static readonly List<Vehicle> SpawnedVehicles = new List<Vehicle>();
         private static int selected;
         private static bool menuOpen;
+        private static bool partnersFollowing = true;
+        private static DateTime nextMenuDraw = DateTime.MinValue;
+        private static readonly SpeechSynthesizer Speaker = new SpeechSynthesizer();
         private static bool f12WasDown, escapeWasDown, upWasDown, downWasDown, enterWasDown;
 
         public static void Main()
@@ -53,9 +56,10 @@ namespace ProverkaPoliceMod
         private static void Tick()
         {
             bool f12 = Game.IsKeyDown(Keys.F12);
-            if (f12 && !f12WasDown) { menuOpen = !menuOpen; DrawMenu(); }
+            if (f12 && !f12WasDown) { menuOpen = !menuOpen; nextMenuDraw = DateTime.MinValue; DrawMenu(); }
             f12WasDown = f12;
             if (!menuOpen) return;
+            if (DateTime.UtcNow >= nextMenuDraw) DrawMenu();
 
             bool esc = Game.IsKeyDown(Keys.Escape);
             if (esc && !escapeWasDown) { menuOpen = false; Game.DisplaySubtitle("Меню закрыто", 1200); }
@@ -81,6 +85,7 @@ namespace ProverkaPoliceMod
             for (int i = 0; i < Menu.Count; i++)
                 text += (i == selected ? "~y~> " : "~w~  ") + Menu[i] + (i == selected ? "~s~" : "") + "\n";
             Game.DisplaySubtitle(text, 2200);
+            nextMenuDraw = DateTime.UtcNow.AddMilliseconds(1800);
         }
 
         private static void ExecuteSelected()
@@ -138,12 +143,11 @@ namespace ProverkaPoliceMod
             foreach (Ped ped in Partners)
             {
                 if (ped == null || !ped.Exists()) continue;
-                if (ped.DistanceTo(PlayerPed) < 4f)
-                    ped.Tasks.StandStill(-1);
-                else
-                    ped.Tasks.FollowToOffsetFromEntity(PlayerPed, new Vector3(1.5f, -1.5f, 0f));
+                if (partnersFollowing) ped.Tasks.Clear();
+                else ped.Tasks.FollowToOffsetFromEntity(PlayerPed, new Vector3(1.5f, -1.5f, 0f));
             }
-            Game.DisplayNotification("Команда напарникам обновлена.");
+            partnersFollowing = !partnersFollowing;
+            Game.DisplayNotification(partnersFollowing ? "Напарники следуют за вами." : "Напарники ждут на месте.");
         }
 
         private static void PutPartnerInVehicle()
@@ -218,11 +222,9 @@ namespace ProverkaPoliceMod
                 Game.DisplaySubtitle(value, Math.Min(10000, Math.Max(2500, value.Length * 70)));
                 try
                 {
-                    using (SpeechSynthesizer speaker = new SpeechSynthesizer())
-                    {
-                        speaker.SetOutputToDefaultAudioDevice();
-                        speaker.SpeakAsync(value);
-                    }
+                    Speaker.SetOutputToDefaultAudioDevice();
+                    Speaker.SpeakAsyncCancelAll();
+                    Speaker.SpeakAsync(value);
                 }
                 catch (Exception ex) { Game.DisplayNotification("Системная озвучка недоступна: " + ex.Message); }
             }
@@ -230,6 +232,7 @@ namespace ProverkaPoliceMod
 
         private static void Cleanup()
         {
+            try { Speaker.SpeakAsyncCancelAll(); } catch { }
             RemovePartners();
             CancelBackup();
             foreach (Vehicle vehicle in SpawnedVehicles) if (vehicle != null && vehicle.Exists()) vehicle.Delete();
