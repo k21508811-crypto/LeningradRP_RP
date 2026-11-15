@@ -1,5 +1,7 @@
 # Feature plan
 
+- Main menu opens/closes with **F12** (planned runtime hotkey).
+
 Planned in-game features (not implemented in installer scaffold):
 1. Partner management and supported Ultimate Backup integration.
 2. Police vehicle spawn menu.
