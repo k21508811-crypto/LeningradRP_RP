@@ -1,0 +1,26 @@
+name: Build Proverka Police Mod Installer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "proverka-police-mod/**"
+      - ".github/workflows/build-proverka-police-mod.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install PyInstaller
+        run: python -m pip install --upgrade pyinstaller
+      - name: Build installer
+        run: pyinstaller --onefile --noconsole --name ProverkaPoliceMod-Setup proverka-police-mod/installer.py
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProverkaPoliceMod-Setup-Windows-x64
+          path: dist/ProverkaPoliceMod-Setup.exe
