@@ -1,0 +1,24 @@
+name: Build Proverka Diagnostics
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "proverka-diagnostics/**"
+      - ".github/workflows/build-proverka-diagnostics.yml"
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish standalone Windows EXE
+        run: dotnet publish proverka-diagnostics/ProverkaDiagnostics.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProverkaDiagnostics-Windows-x64
+          path: publish/ProverkaDiagnostics.exe
+          if-no-files-found: error
