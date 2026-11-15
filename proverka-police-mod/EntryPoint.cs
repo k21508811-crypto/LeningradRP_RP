@@ -5,6 +5,8 @@ using System.Speech.Synthesis;
 using System.Windows.Forms;
 using Rage;
 
+[assembly: Rage.Attributes.Plugin("ProverkaPoliceMod", Description = "Proverka Police Mod for LSPDFR")]
+
 namespace ProverkaPoliceMod
 {
     public static class EntryPoint
