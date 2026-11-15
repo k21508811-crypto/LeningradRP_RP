@@ -47,6 +47,7 @@ def install():
     config = {
         "product": APP_NAME,
         "version": "0.1.0-test",
+        "menu_toggle_key": "F12",
         "license_mode": "test-code",
         "features": {
             "partner_control": True,
@@ -55,7 +56,8 @@ def install():
             "dispatcher_menu": True,
             "custom_text_to_speech": "planned"
         },
-        "note": "Installer scaffold only. Runtime RAGEPluginHook plugin is not included in this test build."
+        "note": "Installer scaffold only. Runtime RAGEPluginHook plugin is not included in this test build.",
+        "menu_toggle_key_note": "F12 is the planned in-game menu toggle; requires the runtime plugin implementation."
     }
     (target / "config.json").write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
     (target / "INSTALLATION.txt").write_text(
