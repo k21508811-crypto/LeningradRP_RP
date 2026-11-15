@@ -1,16 +1,20 @@
 # Feature plan
 
-## Implemented in 0.2.0
-- RAGE Plugin Hook entry point.
-- F12 toggles the in-game menu.
-- ESC closes the menu.
-- Installer copies the plugin DLL into the GTA V Plugins folder.
+## Implemented in 0.5.0
+- Installer validates GTA5.exe, RagePluginHook.exe and Plugins/LSPD First Response.dll.
+- Installer puts ProverkaPoliceMod.dll into Plugins/LSPDFR (the LSPDFR plugin directory).
+- F12 menu, ESC close, arrow navigation and Enter activation.
+- Partner recruit/follow/hold/vehicle entry/removal.
+- POLICE, POLICE2 and POLICE3 vehicle spawning.
+- Dispatcher requests through the LSPDFR Functions.RequestBackup API.
+- Free text subtitle and Windows System.Speech output.
 
-## Planned
-1. Partner management and supported Ultimate Backup integration.
-2. Police vehicle spawn menu.
-3. Dispatcher interaction menu.
-4. Free text input in Russian or English with in-game speech where supported.
-5. Secure per-user licensing backed by a payment provider.
+## Compatibility boundary
+Ultimate Backup support currently uses the standard LSPDFR backup API from the LSPDFR plugin context. A direct proprietary Ultimate Backup API integration is not implemented or claimed. Verify dispatch behavior in-game with the installed Ultimate Backup version.
 
-Compatibility must be verified against the user's exact GTA V Legacy, RAGE Plugin Hook, LSPDFR, and Ultimate Backup versions.
+## Test checklist
+- Confirm the DLL appears in Plugins/LSPDFR.
+- Start RagePluginHook.exe and go on duty.
+- Confirm the plugin load message in RagePluginHook.log.
+- Press F12 and test each menu item.
+- Test each dispatcher unit with Ultimate Backup installed.
