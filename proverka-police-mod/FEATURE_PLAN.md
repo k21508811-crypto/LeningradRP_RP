@@ -1,12 +1,16 @@
 # Feature plan
 
-- Main menu opens/closes with **F12** (planned runtime hotkey).
+## Implemented in 0.2.0
+- RAGE Plugin Hook entry point.
+- F12 toggles the in-game menu.
+- ESC closes the menu.
+- Installer copies the plugin DLL into the GTA V Plugins folder.
 
-Planned in-game features (not implemented in installer scaffold):
+## Planned
 1. Partner management and supported Ultimate Backup integration.
 2. Police vehicle spawn menu.
 3. Dispatcher interaction menu.
-4. Free text input in Russian or English, with in-game speech where supported by installed speech/audio systems.
-5. Access gate using the test code MENUBUC2.
+4. Free text input in Russian or English with in-game speech where supported.
+5. Secure per-user licensing backed by a payment provider.
 
-Implementation must target the user's exact GTA V Legacy, RAGE Plugin Hook, LSPDFR, and Ultimate Backup versions. Do not claim compatibility until tested.
+Compatibility must be verified against the user's exact GTA V Legacy, RAGE Plugin Hook, LSPDFR, and Ultimate Backup versions.
