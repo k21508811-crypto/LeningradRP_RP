@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Speech.Synthesis;
 using System.Windows.Forms;
 using Rage;
@@ -17,8 +18,14 @@ namespace ProverkaPoliceMod
             "Транспорт: POLICE",
             "Транспорт: POLICE2",
             "Транспорт: POLICE3",
-            "Диспетчер: запросить подкрепление",
-            "Диспетчер: отменить подкрепление",
+            "Диспетчер: местный патруль (Code 2)",
+            "Диспетчер: местный патруль (Code 3)",
+            "Диспетчер: SWAT (Code 3)",
+            "Диспетчер: авиация",
+            "Диспетчер: скорая помощь",
+            "Диспетчер: пожарные",
+            "Диспетчер: транспорт заключённых",
+            "Удалить локальное тестовое подкрепление",
             "Озвучить произвольный текст",
             "Закрыть меню"
         };
@@ -101,10 +108,16 @@ namespace ProverkaPoliceMod
                     case 4: SpawnPoliceVehicle("POLICE"); break;
                     case 5: SpawnPoliceVehicle("POLICE2"); break;
                     case 6: SpawnPoliceVehicle("POLICE3"); break;
-                    case 7: RequestBackup(); break;
-                    case 8: CancelBackup(); break;
-                    case 9: SpeakCustomText(); break;
-                    case 10: menuOpen = false; break;
+                    case 7: RequestLspdfrBackup("Code2", "LocalUnit"); break;
+                    case 8: RequestLspdfrBackup("Code3", "LocalUnit"); break;
+                    case 9: RequestLspdfrBackup("Code3", "SwatTeam"); break;
+                    case 10: RequestLspdfrBackup("Code3", "AirUnit"); break;
+                    case 11: RequestLspdfrBackup("Code2", "Ambulance"); break;
+                    case 12: RequestLspdfrBackup("Code2", "Firetruck"); break;
+                    case 13: RequestLspdfrBackup("Code2", "PrisonerTransport"); break;
+                    case 14: CancelBackup(); break;
+                    case 15: SpeakCustomText(); break;
+                    case 16: menuOpen = false; break;
                 }
             }
             catch (Exception ex)
@@ -181,27 +194,53 @@ namespace ProverkaPoliceMod
             Game.DisplayNotification("Создан полицейский автомобиль: " + modelName);
         }
 
-        private static void RequestBackup()
+        private static void RequestLspdfrBackup(string responseName, string unitName)
         {
-            if (BackupVehicles.Count > 0) { Game.DisplayNotification("Подкрепление уже вызвано."); return; }
-            string[] cars = { "POLICE2", "POLICE3" };
-            for (int i = 0; i < cars.Length; i++)
+            try
             {
-                Model vehicleModel = LoadModel(cars[i]);
-                Vector3 pos = PlayerPed.GetOffsetPosition(new Vector3((i == 0 ? -1 : 1) * 9f, 18f, 0f));
-                Vehicle vehicle = new Vehicle(vehicleModel, pos, PlayerPed.Heading);
-                vehicle.IsPersistent = true;
-                BackupVehicles.Add(vehicle);
-                vehicleModel.Dismiss();
+                Assembly lspdfr = null;
+                foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (assembly.GetName().Name.IndexOf("LSPD", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        lspdfr = assembly;
+                        break;
+                    }
+                }
+                if (lspdfr == null)
+                    throw new InvalidOperationException("Сборка LSPDFR не найдена. Убедитесь, что LSPDFR загружен.");
 
-                Model copModel = LoadModel("s_m_y_cop_01");
-                Ped driver = new Ped(copModel, pos, PlayerPed.Heading);
-                driver.IsPersistent = true;
-                driver.Tasks.EnterVehicle(vehicle, -1);
-                BackupPeds.Add(driver);
-                copModel.Dismiss();
+                Type functionsType = lspdfr.GetType("LSPD_First_Response.Mod.API.Functions", false);
+                Type responseType = lspdfr.GetType("LSPD_First_Response.EBackupResponseType", false);
+                Type unitType = lspdfr.GetType("LSPD_First_Response.EBackupUnitType", false);
+                if (functionsType == null || responseType == null || unitType == null)
+                    throw new InvalidOperationException("В этой версии LSPDFR не найдены типы API подкрепления.");
+
+                MethodInfo request = null;
+                foreach (MethodInfo method in functionsType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                {
+                    ParameterInfo[] args = method.GetParameters();
+                    if (method.Name == "RequestBackup" && args.Length == 3 &&
+                        args[0].ParameterType == typeof(Vector3) &&
+                        args[1].ParameterType == responseType && args[2].ParameterType == unitType)
+                    {
+                        request = method;
+                        break;
+                    }
+                }
+                if (request == null)
+                    throw new InvalidOperationException("В установленной версии LSPDFR отсутствует совместимый RequestBackup.");
+
+                object response = Enum.Parse(responseType, responseName, true);
+                object unit = Enum.Parse(unitType, unitName, true);
+                request.Invoke(null, new object[] { PlayerPed.Position, response, unit });
+                Game.DisplayNotification("Диспетчер: запрос отправлен — " + unitName + " / " + responseName);
             }
-            Game.DisplayNotification("Подкрепление создано рядом с вами. Это локальная имитация, не вызов LSPDFR/Ultimate Backup.");
+            catch (Exception ex)
+            {
+                Game.LogTrivial("LSPDFR backup API unavailable: " + ex);
+                Game.DisplayNotification("Не удалось вызвать LSPDFR: " + ex.Message);
+            }
         }
 
         private static void CancelBackup()
@@ -210,7 +249,7 @@ namespace ProverkaPoliceMod
             foreach (Vehicle vehicle in BackupVehicles) if (vehicle != null && vehicle.Exists()) vehicle.Delete();
             BackupPeds.Clear();
             BackupVehicles.Clear();
-            Game.DisplayNotification("Подкрепление удалено.");
+            Game.DisplayNotification("Удалено только локальное тестовое подкрепление. Отряд LSPDFR/Ultimate Backup снимайте штатной командой игры.");
         }
 
         private static void SpeakCustomText()
