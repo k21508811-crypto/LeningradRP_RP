@@ -1,4 +1,4 @@
-name: Build Proverka Police Mod Installer
+name: Build Proverka Police Mod
 
 on:
   workflow_dispatch:
@@ -12,15 +12,27 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build RAGE Plugin Hook DLL
+        run: dotnet build proverka-police-mod/ProverkaPoliceMod.csproj --configuration Release --output build/plugin
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install PyInstaller
         run: python -m pip install --upgrade pyinstaller
-      - name: Build installer
-        run: pyinstaller --onefile --noconsole --name ProverkaPoliceMod-Setup proverka-police-mod/installer.py
-      - name: Upload Windows installer
+      - name: Build Windows installer with plugin DLL
+        run: pyinstaller --onefile --noconsole --name ProverkaPoliceMod-Setup --add-data "build/plugin/ProverkaPoliceMod.dll;plugin" proverka-police-mod/installer.py
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: ProverkaPoliceMod-Setup-Windows-x64
           path: dist/ProverkaPoliceMod-Setup.exe
+      - name: Upload plugin DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProverkaPoliceMod-DLL-Windows-x64
+          path: build/plugin/ProverkaPoliceMod.dll
