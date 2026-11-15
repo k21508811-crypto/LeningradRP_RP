@@ -45,7 +45,7 @@ namespace ProverkaPoliceMod
 
         public static void Main()
         {
-            Game.DisplayNotification("Proverka Police Mod загружен. F12 — меню.");
+            Game.DisplayNotification("Proverka Police Mod загружен. F10 или F12 — меню.");
             try
             {
                 while (true)
@@ -64,9 +64,9 @@ namespace ProverkaPoliceMod
 
         private static void Tick()
         {
-            bool f12 = Game.IsKeyDown(Keys.F12);
-            if (f12 && !f12WasDown) { menuOpen = !menuOpen; nextMenuDraw = DateTime.MinValue; DrawMenu(); }
-            f12WasDown = f12;
+            bool menuKey = Game.IsKeyDown(Keys.F12) || Game.IsKeyDown(Keys.F10);
+            if (menuKey && !f12WasDown) { menuOpen = !menuOpen; nextMenuDraw = DateTime.MinValue; if (menuOpen) DrawMenu(); }
+            f12WasDown = menuKey;
             if (!menuOpen) return;
             if (DateTime.UtcNow >= nextMenuDraw) DrawMenu();
 
@@ -90,7 +90,7 @@ namespace ProverkaPoliceMod
 
         private static void DrawMenu()
         {
-            string text = "~r~PROVERKA POLICE MOD~s~\nF12/ESC — закрыть | ↑↓ — выбор | ENTER — выполнить\n";
+            string text = "~r~PROVERKA POLICE MOD~s~\nF10/F12 — открыть/закрыть | ESC — закрыть | ↑↓ — выбор | ENTER — выполнить\n";
             for (int i = 0; i < Menu.Count; i++)
                 text += (i == selected ? "~y~> " : "~w~  ") + Menu[i] + (i == selected ? "~s~" : "") + "\n";
             Game.DisplaySubtitle(text, 2200);
