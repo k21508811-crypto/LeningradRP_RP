@@ -1,27 +1,53 @@
 # Proverka Police Mod
 
-RAGE Plugin Hook add-on for GTA V Legacy. Version 0.4.0.
+RAGE Plugin Hook / LSPDFR plugin for GTA V Legacy. Version 0.5.0.
+
+## Correct installation
+
+This project is an **LSPDFR plugin**, not a standalone RAGE Plugin Hook plugin.
+
+The installer places the DLL here:
+
+```
+GTA V Legacy/
+  GTA5.exe
+  RagePluginHook.exe
+  Plugins/
+    LSPD First Response.dll
+    LSPDFR/
+      ProverkaPoliceMod.dll
+      ProverkaPoliceMod.json
+```
+
+Run `ProverkaPoliceMod-Setup.exe` separately. Select the GTA V root folder containing `GTA5.exe` if it is not detected. Do not copy the Setup executable into `Plugins/LSPDFR`.
+
+Launch `RagePluginHook.exe`, wait for LSPDFR to load, then go on duty. LSPDFR loads its plugins from `Plugins/LSPDFR` when the player goes on duty. Press F12 after going on duty.
 
 ## Controls
-- F12: open/close the in-game menu.
-- Up/Down: select a command.
+
+- F12: open/close menu.
+- Up/Down: select.
 - Enter: execute.
-- Esc: close the menu.
+- Esc: close.
 
 ## Implemented functions
-- Create up to three local police partner peds; issue follow/hold commands.
+
+- Recruit up to three local police partner peds; toggle follow/hold.
 - Order recruited partners into the player's current vehicle.
-- Spawn POLICE, POLICE2 and POLICE3 vehicles.
-- Dispatcher menu requests LocalUnit, SWAT, AirUnit, Ambulance, Firetruck and PrisonerTransport through the LSPDFR `Functions.RequestBackup` API using reflection, avoiding a compile-time dependency on LSPDFR.
-- Enter custom Russian or English text; show it as an in-game subtitle and send it to Windows System.Speech.
+- Spawn POLICE, POLICE2 and POLICE3.
+- Request LocalUnit, SWAT, AirUnit, Ambulance, Firetruck and PrisonerTransport through LSPDFR's `Functions.RequestBackup` API.
+- Enter custom Russian or English text, show it as an in-game subtitle and send it to Windows System.Speech.
 
-## Compatibility notes
-- Built for .NET Framework 4.8 and the RAGE Plugin Hook SDK package.
-- Install compatible RAGE Plugin Hook and LSPDFR releases for GTA V Legacy separately.
-- The dispatcher calls the standard LSPDFR backup API. If Ultimate Backup is installed and intercepts standard LSPDFR backup requests in the user's setup, it should handle those requests; this is not a direct Ultimate Backup proprietary API integration.
-- The local "remove test backup" option only removes entities created by this plugin; use the normal LSPDFR/Ultimate Backup dismissal controls for dispatched units.
-- Speech output depends on Windows voices installed on the user's system. Russian speech requires a Russian Windows speech voice.
-- The in-game text-entry dialog temporarily switches focus to Windows.
+## Ultimate Backup compatibility
 
-## Build
-GitHub Actions builds the plugin DLL and Windows installer. RAGE Plugin Hook itself is not redistributed.
+The dispatcher calls the documented standard LSPDFR backup API from the LSPDFR plugin context. This allows Ultimate Backup to handle requests if the installed Ultimate Backup version intercepts standard LSPDFR backup requests. It is **not a direct call to a private/proprietary Ultimate Backup API**, and that behavior must be tested in-game with the user's installed versions.
+
+## Troubleshooting
+
+1. Confirm `Plugins/LSPDFR/ProverkaPoliceMod.dll` exists.
+2. Start through `RagePluginHook.exe`.
+3. Go on duty in LSPDFR; being in Story Mode alone is not enough to load an LSPDFR plugin.
+4. If it still does not appear, inspect `RagePluginHook.log` in the GTA V root and search for `ProverkaPoliceMod` or a plugin load error.
+5. Windows speech output depends on installed Windows voices. Russian speech requires a Russian voice.
+
+Built for .NET Framework 4.8 and x64. RAGE Plugin Hook and LSPDFR must be installed separately; they are not redistributed.
