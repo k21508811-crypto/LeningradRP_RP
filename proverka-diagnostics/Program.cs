@@ -38,8 +38,7 @@ sealed class MainForm : Form
         top.Controls.Add(save, 2, 1);
         Controls.Add(output); Controls.Add(top);
         scan.Click += (_, _) => RunScan();
-        output.Text = "Выберите корневую папку GTA V Legacy и нажмите «Проверить».
-Программа только читает файлы и журналы — ничего не удаляет и не изменяет.";
+        output.Text = "Выберите корневую папку GTA V Legacy и нажмите «Проверить».\\r\\nПрограмма только читает файлы и журналы — ничего не удаляет и не изменяет.";
     }
 
     void RunScan()
