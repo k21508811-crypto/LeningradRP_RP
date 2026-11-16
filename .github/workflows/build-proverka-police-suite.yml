@@ -1,0 +1,45 @@
+name: Build Proverka Police Suite
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, feature/proverka-police-suite ]
+    paths:
+      - "proverka-police-launcher/**"
+      - "proverka-police-mod/**"
+      - ".github/workflows/build-proverka-police-suite.yml"
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish standalone launcher
+        run: dotnet publish proverka-police-launcher/ProverkaPoliceLauncher.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o publish
+      - name: Build RAGE plugin
+        run: dotnet build proverka-police-mod/ProverkaPoliceMod.csproj -c Release -o build/plugin
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $iscc = "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { throw "ISCC.exe not found: $iscc" }
+          & $iscc "proverka-police-launcher/installer.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed" }
+      - name: Upload launcher EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProverkaPoliceLauncher-Windows-x64
+          path: publish/ProverkaPoliceLauncher.exe
+      - name: Upload setup EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProverkaPoliceSuite-Setup-Windows-x64
+          path: dist/ProverkaPoliceSuite-Setup.exe
+      - name: Upload plugin DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProverkaPoliceMod-DLL-Windows-x64
+          path: build/plugin/ProverkaPoliceMod.dll
